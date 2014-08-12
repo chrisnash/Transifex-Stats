@@ -91,17 +91,35 @@ class Codepress_Transifex_Admin {
 		return $links;
 	}
 
+	public function sanitize_text( $options, $key ) {
+		$value = $options[$key];
+		$value = sanitize_text_field( $value );
+		$value = trim( $value );
+		return $value;
+	}
+	
+	public function sanitize_password( $options, $key ) {
+		// TODO: this was how the original plugin sanitized a password, but it
+		// doesn't behave correctly if your password contains <, for instance.
+		return $this->sanitize_text( $options, $key );
+	}
+	
+	public function sanitize_boolean( $options, $key ) {
+		return isset( $options[$key] );
+	}
+	
 	/**
 	 * Sanitize options
 	 *
 	 * @since 0.1
 	 */
 	public function sanitize_options( $options ) {
-
-		$options = array_map( 'sanitize_text_field', $options );
-		$options = array_map( 'trim', $options );
-
-		return $options;
+		$new_options = array();
+		foreach( self::$settings_table as $key =>$data ) {
+			$sanitize_func = $data['sanitizer'];
+			$new_options[ $key ] = $this->$sanitize_func( $options, $key );
+		}
+		return $new_options;
 	}
 
 	/**
@@ -110,27 +128,91 @@ class Codepress_Transifex_Admin {
 	 * @since 0.1
 	 */
 	public function register_settings() {
-
-		// If we have no options in the database, let's add them now.
-		if ( false === get_option( 'cpti_options' ) ) {
-			add_option( 'cpti_options', $this->get_default_values() );
-		}
-
+		$settings = get_option( 'cpti_options' );
+		$this->enforce_defaults( $settings );
 		register_setting( 'cpti-settings-group', 'cpti_options', array( $this, 'sanitize_options' ) );
 	}
 
+	public function enforce_defaults( &$settings ) {
+		$changed = false;
+		if ( $settings === false ) {
+			$settings = array();
+		}
+		$defaults = $this->get_default_values();
+		foreach( $defaults as $key=>$value ) {
+			if ( !isset( $settings[ $key ] ) ) {
+				$settings[ $key ] = $value;
+				$changed = true;
+			}
+		}
+		if ( $changed ) {
+			add_option( 'cpti_options', $settings );
+		}
+	}
+
+	/**
+	 * New settings handler implementation for WPT version of the plugin.
+	 */
+	private static $settings_table = array(
+			'username'	=>	array( 'default'=>'', 'html_type'=>'text', 'html_class'=>'regular-text code', 'sanitizer'=>'sanitize_text' ),
+			'password'	=>	array( 'default'=>'', 'html_type'=>'password', 'html_class'=>'regular-text code', 'sanitizer'=>'sanitize_password' ),
+			'showlang'	=>	array( 'default'=>true, 'html_type'=>'checkbox', 'html_class'=>'', 'sanitizer'=>'sanitize_boolean' ),
+			'showcode'	=>	array( 'default'=>false, 'html_type'=>'checkbox', 'html_class'=>'', 'sanitizer'=>'sanitize_boolean' ),
+			'shownative'	=>	array( 'default'=>false, 'html_type'=>'checkbox', 'html_class'=>'', 'sanitizer'=>'sanitize_boolean' ),
+			);
+	  
+	/**
+	 * HTML input text element driver.
+	 */
+	private function input_text( $key, $value, $clazz ) {
+		echo "<input type='text' class='$clazz' id='$key' name='cpti_options[$key]' value='" . esc_attr( $value ) . "'>";
+	}
+	
+	/**
+	 * HTML input password element driver.
+	 */
+	private function input_password( $key, $value, $clazz ) {
+		echo "<input type='password' class='$clazz' id='$key' name='cpti_options[$key]' value='" . esc_attr( $value ) . "'>";
+	}
+	
+	/**
+	 * HTML input checkbox element driver.
+	 */
+	private function input_checkbox( $key, $value, $clazz ) {
+		echo "<input type='checkbox' class='$clazz' id='$key' name='cpti_options[$key]' value='true' " . ( $value ? 'checked' : '') . ">";
+	}
+
+	/**
+  	 * HTML field generator.
+	 */
+	private function field_generate( $options, $key, $text ) {
+		$setting = self::$settings_table[$key];
+		$type = $setting['html_type'];
+		$clazz = $setting['html_class'];
+		$value = $options[$key];
+		$driver = 'input_' . $type;
+		?>
+			<tr valign="top">
+				<th scope="row">
+					<label for="<?php echo $key; ?>"><?php echo $text; ?></label>
+				</th>
+				<td>
+					<label for="<?php echo $key; ?>"><?php $this->$driver( $key, $value, $clazz ); ?></label>
+				</td>
+			</tr>
+		<?php
+	}
+		
 	/**
 	 * Returns the default plugin options.
 	 *
 	 * @since 0.1
 	 */
 	public function get_default_values() {
-
-		$defaults = array(
-			'username'	=> '',
-			'password' 	=> '',
-		);
-
+		$defaults = array();
+		foreach ( self::$settings_table as $key=>$data ) {
+			$defaults[ $key ] = $data['default'];
+		}
 		return apply_filters( 'cpti-defaults', $defaults );
 	}
 
@@ -165,7 +247,8 @@ class Codepress_Transifex_Admin {
 	public function plugin_settings_page() {
 
 		$options = get_option( 'cpti_options' );
-
+		$this->enforce_defaults( $options );
+		echo '<!--'; var_export($options); echo '-->';
 	?>
 	<div id="cpti" class="wrap">
 		<?php screen_icon( CPTI_SLUG ); ?>
@@ -177,35 +260,17 @@ class Codepress_Transifex_Admin {
 
 			<table class="form-table">
 				<tbody>
-
 					<tr valign="top">
 						<th scope="row" colspan="2">
 							<p><?php _e( 'Fill in your Transifex credentials below to make a connection with the Transifex API.', 'transifex-stats' ); ?></p>
 							<p><?php _e( 'Your credentials will remain private and will only be used to connect with Transifex API.', 'transifex-stats' ); ?></p>
 						</th>
 					</tr>
-
-					<tr valign="top">
-						<th scope="row">
-							<label for="username"><?php _e( 'Username', 'transifex-stats' ) ?></label>
-						</th>
-						<td>
-							<label for="username">
-								<input type="text" class="regular-text code" id="username" name="cpti_options[username]" value="<?php echo $options['username']; ?>">
-							</label>
-						</td>
-					</tr>
-					<tr valign="top">
-						<th scope="row">
-							<label for="password"><?php _e( 'Password', 'transifex-stats' ) ?></label>
-						</th>
-						<td>
-							<label for="password">
-								<input type="password" class="regular-text code" id="password" name="cpti_options[password]" value="<?php echo $options['password']; ?>">
-							</label>
-						</td>
-					</tr>
-
+					<?php $this->field_generate( $options, 'username', __( 'Username', 'transifex-stats' ) ); ?>
+					<?php $this->field_generate( $options, 'password', __( 'Password', 'transifex-stats' ) ); ?>
+					<?php $this->field_generate( $options, 'showlang', __( 'Show language name (English)?', 'transifex-stats' ) ); ?>
+					<?php $this->field_generate( $options, 'showcode', __( 'Show language code?', 'transifex-stats' ) ); ?>
+					<?php $this->field_generate( $options, 'shownative', __( 'Show language name (native)?', 'transifex-stats' ) ); ?>
 				</tbody>
 			</table>
 

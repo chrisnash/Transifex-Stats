@@ -35,6 +35,18 @@
 	padding-right: 8px;
 	margin: 10px 0 0 0;
 }
+.transifex-stats ul li .language_code {
+	float: left;
+	width: 10%;
+	padding-right: 8px;
+	margin: 10px 0 0 0;
+}
+.transifex-stats ul li .language_native {
+	float: left;
+	width: 20%;
+	padding-right: 8px;
+	margin: 10px 0 0 0;
+}
 .transifex-stats ul li .statbar {
 	overflow: hidden;
 	padding-right: 160px;

@@ -1,4 +1,5 @@
 <?php
+require_once( dirname(__FILE__) . '/class-wptranslations-languages.php' );
 
 class Codepress_Transifex_Stats {
 
@@ -123,7 +124,7 @@ class Codepress_Transifex_Stats {
 	 * @param string $resource_slug Transifex Resource slug
 	 */
 	public function display_translations_progress() {
-
+		$options = get_option( 'cpti_options' );
 		if ( ! $this->project_slug ) {
 			return;
 		}
@@ -163,12 +164,18 @@ class Codepress_Transifex_Stats {
 		<ul>
 			<?php
 			foreach ( $languages as $language_code => $resource ) :
-				$language = $this->get_language( $language_code );
+				$data = WPTranslations_Languages::lookup_language( $language_code );
 			?>
 			<li class="clearfix">
-				<div class="language_name">
-					<?php echo $language->name; ?>
-				</div>
+				<?php if ( $options['showlang'] ) { ?>
+					<div class="language_name"> <?php echo $data['name']; ?> </div>
+				<?php } ?>
+				<?php if ( $options['showcode'] ) { ?>
+					<div class="language_code"> <?php echo $data['code']; ?> </div>
+				<?php } ?>
+				<?php if ( $options['shownative'] ) { ?>
+					<div class="language_native"> <?php echo $data['native']; ?> </div>
+				<?php } ?>
 				<div class="statbar">
 					<div class="graph_resource">
 						<div class="translated_comp" style="width:<?php echo $resource->completed; ?>;"></div>
