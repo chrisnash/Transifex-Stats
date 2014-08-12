@@ -38,7 +38,7 @@ class Codepress_Transifex_Admin {
 	public function settings_menu() {
 
 		$page = add_options_page( __( 'Transifex Stats', 'transifex-stats' ), __( 'Transifex Stats', 'transifex-stats' ), 'manage_options', CPTI_SLUG, array( $this, 'plugin_settings_page') );
-		add_action( "admin_print_styles-{$page}", array( $this, 'admin_styles') );
+		add_action( "admin_print_styles-{$page}", array( $this, 'admin_styles' ) );
 
 		// verify credentials
 		add_action( "load-{$page}", array( $this, 'verify_credentials' ) );
@@ -51,15 +51,15 @@ class Codepress_Transifex_Admin {
 	 */
 	function verify_credentials() {
 
-		if ( false !== get_option('cptw_options') && isset( $_REQUEST['settings-updated'] ) && 'true' == $_REQUEST['settings-updated'] ) {
+		if ( false !== get_option( 'cptw_options' ) && isset( $_REQUEST['settings-updated'] ) && 'true' == $_REQUEST['settings-updated'] ) {
 
-			$api = new Codepress_Transifex_API();
+			$api    = new Codepress_Transifex_API();
 			$result = $api->verify_credentials();
 
 			if ( ! $result ) {
 				$this->notices[] = (object) array(
 					'message' 	=> __( 'Your transifex credentials are incorrect.', 'transifex-stats' ),
-					'class'		=> 'error'
+					'class'		=> 'error',
 				);
 			}
 		}
@@ -86,7 +86,7 @@ class Codepress_Transifex_Admin {
 			return $links;
 		}
 
-		array_unshift( $links, '<a href="' .  admin_url("admin.php") . '?page=' . CPTI_SLUG . '">' . __( 'Settings', 'transifex-stats' ) . '</a>' );
+		array_unshift( $links, '<a href="' .  admin_url( 'admin.php' ) . '?page=' . CPTI_SLUG . '">' . __( 'Settings', 'transifex-stats' ) . '</a>' );
 
 		return $links;
 	}
@@ -115,7 +115,7 @@ class Codepress_Transifex_Admin {
 	 */
 	public function sanitize_options( $options ) {
 		$new_options = array();
-		foreach( self::$settings_table as $key =>$data ) {
+		foreach ( self::$settings_table as $key => $data ) {
 			$sanitize_func = $data['sanitizer'];
 			$new_options[ $key ] = $this->$sanitize_func( $options, $key );
 		}
@@ -139,8 +139,8 @@ class Codepress_Transifex_Admin {
 			$settings = array();
 		}
 		$defaults = $this->get_default_values();
-		foreach( $defaults as $key=>$value ) {
-			if ( !isset( $settings[ $key ] ) ) {
+		foreach ( $defaults as $key => $value ) {
+			if ( ! isset( $settings[ $key ] ) ) {
 				$settings[ $key ] = $value;
 				$changed = true;
 			}
@@ -154,13 +154,12 @@ class Codepress_Transifex_Admin {
 	 * New settings handler implementation for WPT version of the plugin.
 	 */
 	private static $settings_table = array(
-			'username'	=>	array( 'default'=>'', 'html_type'=>'text', 'html_class'=>'regular-text code', 'sanitizer'=>'sanitize_text' ),
-			'password'	=>	array( 'default'=>'', 'html_type'=>'password', 'html_class'=>'regular-text code', 'sanitizer'=>'sanitize_password' ),
-			'showlang'	=>	array( 'default'=>true, 'html_type'=>'checkbox', 'html_class'=>'', 'sanitizer'=>'sanitize_boolean' ),
-			'showcode'	=>	array( 'default'=>false, 'html_type'=>'checkbox', 'html_class'=>'', 'sanitizer'=>'sanitize_boolean' ),
-			'shownative'	=>	array( 'default'=>false, 'html_type'=>'checkbox', 'html_class'=>'', 'sanitizer'=>'sanitize_boolean' ),
+			'username'	=>	array( 'default' => '', 'html_type' => 'text', 'html_class' => 'regular-text code', 'sanitizer' => 'sanitize_text' ),
+			'password'	=>	array( 'default' => '', 'html_type' => 'password', 'html_class' => 'regular-text code', 'sanitizer' => 'sanitize_password' ),
+			'showlang'	=>	array( 'default' => true, 'html_type' => 'checkbox', 'html_class' => '', 'sanitizer' => 'sanitize_boolean' ),
+			'showcode'	=>	array( 'default' => false, 'html_type' => 'checkbox', 'html_class' => '', 'sanitizer' => 'sanitize_boolean' ),
+			'shownative'	=>	array( 'default' => false, 'html_type' => 'checkbox', 'html_class' => '', 'sanitizer' => 'sanitize_boolean' ),
 			);
-	  
 	/**
 	 * HTML input text element driver.
 	 */
@@ -187,10 +186,10 @@ class Codepress_Transifex_Admin {
 	 */
 	private function field_generate( $options, $key, $text ) {
 		$setting = self::$settings_table[$key];
-		$type = $setting['html_type'];
-		$clazz = $setting['html_class'];
-		$value = $options[$key];
-		$driver = 'input_' . $type;
+		$type    = $setting['html_type'];
+		$clazz   = $setting['html_class'];
+		$value   = $options[$key];
+		$driver  = 'input_' . $type;
 		?>
 			<tr valign="top">
 				<th scope="row">
